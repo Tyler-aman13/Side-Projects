@@ -1,0 +1,215 @@
+---
+title: "Can You Turn America's Pastime Into A Game of Yahtzee"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Sampling set up
+
+We Start by creating the Dice for the game
+
+```{r sampling}
+
+#our our game of baseball
+Ball = c(1 , 2 , 3 , 4 , 5 , 6)
+Play = c()
+Total_Game_Runs = c()
+Bases = rep(F,3)
+Strikes = 0
+Outs = 0
+innings = 0
+Total_Runs = 0
+runs = 0
+Team_1 = rep(0,9)
+Team_1_Runs = c()
+Team_2 = rep(0,9)
+Team_2_Runs = c()
+inning_Stats = list(innings, Total_Runs,Team_1,Team_2)
+names(inning_Stats) = c("innings","Total runs", "Team 1 runs","Team 2 runs")
+
+```
+
+## Play ball
+
+"Announcer: And here we are at FiveThirtyEight Park for a beautiful afternoon of baseball between the FiveThirtyEight Sports and Politics Writers!"
+
+```{r Ball, echo=FALSE}
+set.seed(486)
+i = 0
+for(i in 1:10000){
+  while(innings < 18){
+  Play = sample(Ball, 2, replace = T)
+  Placement = which(Bases == T)
+
+  if(any(Play == 1)){
+    Strikes = 0
+    if(identical((Play <= 4),c(T,T))){
+      runs = runs + sum(Placement > 1)
+      Bases[2:3] = F
+      if(identical(Play,c(1,1))){
+        Bases[2] = T
+    
+        if(Bases[1] == T){
+          Bases[1] = F
+          Bases[3] = T
+        }
+      }
+      else{
+        if(Bases[1] == T){
+          Bases[2] = T
+        }
+        Bases[1] = T
+      }
+    }
+    else if(any(Play == 5)){
+      runs = runs + sum(Placement > 2)
+      Bases[3] = F
+      if(Bases[2] == T){
+        Bases[2] = F
+        Bases[3] = T
+      }
+      if(Bases[1] == T){
+        Bases[2] = T
+      }
+      Bases[1] = T
+    } 
+    else if(any(Play == 6)){
+        if(identical(Bases, c(T,T,T))){
+          runs = runs + 1
+      }
+      else if(Bases[1] == T){
+        if(Bases[2] == T){
+          Bases[3] = T
+        }
+        Bases[2] = T
+      }
+      Bases[1] = T
+    }
+  }else if(any(Play == 2)){
+    if(any(Play != 6)){
+      Strikes = Strikes + 1
+      if(Strikes == 3){
+        Strikes = 0
+        Outs = Outs + 1
+      }
+    }
+    else{
+      Strikes = 0
+      Outs = Outs + 1
+    }
+  }else if(any(Play == 3) | any(Play == 4)){
+    Strikes = 0
+    Outs = Outs + 1
+    if(Outs < 3){
+      if(Bases[3] == T){
+        runs = runs + 1
+        Bases[3] = F
+      }
+      if(identical(Play <=4,c(T,T)) & 
+         !identical(Play,c(4,4))){
+        if(Bases[2] == T){
+          Bases[3] = T
+          Bases[2] = F
+        }
+        if(Bases[1] == T){
+          Bases[2] = T
+        }
+        Bases[1] = F
+      }
+    }  
+  }else if(any(Play == 5)){
+    Strikes = 0
+    if(any(Play == 6)){
+      runs = runs + sum(Bases)
+      Bases = c(F,F,T)
+    }else{
+      Outs = Outs + 1
+      if(sum(Bases) == 1){
+        Outs = Outs + 1
+        Bases = c(F,F,F)
+      }else if (sum(Bases) > 1){
+        if(Bases[1] == T){
+          Outs = Outs + 1
+          if(Outs < 3){
+            if(Bases[3] == T){
+              runs = runs + 1
+              Bases[3] == F
+              Bases[1] == F
+            }
+            if(Bases[2] == T){
+              Bases[3] == T
+              Bases[2] == F
+            }
+          }
+        }else{
+          Outs = Outs + 1
+          Bases[2] = F
+          if(Outs < 3){
+            runs = runs + 1
+            Bases[3]=F
+          }
+        }
+      }
+    }  
+  }else if(any(Play == 6)){
+    Strikes = 0
+    runs = runs + sum(Bases) + 1
+    Bases = c(F,F,F)
+  }
+  if(Outs > 2){
+    Outs = 0
+    Strikes = 0
+    Bases = c(F,F,F)
+    Total_Runs = Total_Runs + runs
+    innings = innings + 1
+    inning_Stats$innings = innings/2
+    inning_Stats$`Total runs` = Total_Runs
+    if(any((innings)==
+           c(1,3,5,7,9,11,13,15,17))){
+      inning_Stats$`Team 1 runs`[which(innings ==             c(1,3,5,7,9,11,13,15,17))]   = runs
+      runs = 0
+    }else{
+      inning_Stats$`Team 2 runs`[innings/2] = runs
+      runs = 0
+    }
+    ##if(innings/18 == 1){
+      ##print(paste("end of game"))
+      ##print(inning_Stats)
+    ##}
+    ##if you want to see the results
+  }
+  }
+  Total_Game_Runs = c(Total_Game_Runs,Total_Runs)
+  Team_1_Runs = c(Team_1_Runs, 
+                  sum(inning_Stats$`Team 1 runs`))
+  Team_2_Runs = c(Team_2_Runs, 
+                  sum(inning_Stats$`Team 2 runs`))
+  innings = 0
+  Total_Runs = 0
+  Team_1 = rep(0,9)
+  Team_2 = rep(0,9)
+  inning_Stats = list(innings,Total_Runs,
+                      Team_1,Team_2)
+  names(inning_Stats) = c("innings","Total runs", 
+                          "Team 1 runs",
+                          "Team 2 runs")
+  
+}
+
+```
+
+## The Results
+
+Announcer: Well guys that was a whirl wind of some baseball! 1000 games in under 10 seconds! lets check out the stats for the teams!
+
+```{r results}
+mean(Total_Game_Runs)
+hist(Total_Game_Runs)
+mean(Team_1_Runs)
+hist(Team_1_Runs)
+mean(Team_2_Runs)
+hist(Team_2_Runs)
+```
